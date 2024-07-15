@@ -37,5 +37,5 @@ public class Ad {
     private boolean animalsAllowed;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    private User user;
+    private User publisher;
 }
