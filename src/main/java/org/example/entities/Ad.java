@@ -1,4 +1,4 @@
-package entities;
+package org.example.entities;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -31,10 +31,10 @@ public class Ad {
     private String car;
     @Column(name = "max_seats")
     private int max_seats;
+    @Column(name = "booked_seats")
+    private int booked_seats;
     @Column(name = "two_back_seats")
     private boolean twoBackSeats;
-    @Column(name = "animals_allowed")
-    private boolean animalsAllowed;
 
     @ManyToOne(fetch = FetchType.LAZY)
     private User publisher;
