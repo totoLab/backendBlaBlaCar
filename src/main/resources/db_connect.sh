@@ -1,0 +1,1 @@
+mariadb --ssl-verify-server-cert=false -P 3310 -u admin -p
