@@ -1,7 +1,7 @@
-package repositories;
+package org.example.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import entities.User;
+import org.example.entities.User;
 import java.util.List;
 
 public interface UserRepo extends JpaRepository<User, Long>  {
@@ -14,4 +14,5 @@ public interface UserRepo extends JpaRepository<User, Long>  {
 
     boolean existsByEmail(String email);
     boolean existsByUsername(String username);
+    boolean existsByEmailOrUsername(String email, String username);
 }
