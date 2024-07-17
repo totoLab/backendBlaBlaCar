@@ -10,7 +10,7 @@ import org.example.repositories.AdRepo;
 import java.time.LocalDate;
 import java.util.List;
 
-// not checking for availability because server admits removing a booking
+//? not checking for availability because server admits removing a booking
 @Service
 public class AdServices {
 
@@ -18,9 +18,20 @@ public class AdServices {
     AdRepo adRepository;
 
     @Transactional(readOnly = true)
-    public List<Ad> getAllAds() {
+    public List<Ad> getAvailableAds() {
         LocalDate yesterday = LocalDate.now().minusDays(1);
         return adRepository.findByDateAfter(yesterday);
+    }
+
+    @Transactional(readOnly = true)
+    public Ad getAdById(long id) {
+        return adRepository.findById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public Ad getAvailableById(long id) {
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        return adRepository.findByIdAndDateAfter(id, yesterday);
     }
 
     // consider filter twoBackSeats disabled when false and filtering based on it when true

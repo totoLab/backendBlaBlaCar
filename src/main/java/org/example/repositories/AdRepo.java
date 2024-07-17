@@ -11,6 +11,8 @@ public interface AdRepo extends JpaRepository<Ad, Long>  {
     List<Ad> findByDepartureCityAndArrivalCityAndDateAfter(String departureCity, String arrivalCity, LocalDate date);
     List<Ad> findByDepartureCityAndArrivalCityAndDate(String departureCity, String arrivalCity, LocalDate date);
     List<Ad> findByDateAfter(LocalDate date);
+    Ad findByIdAndDateAfter(long id, LocalDate date);
+    Ad findById(long id);
 
     boolean existsByDepartureCityAndArrivalCityAndDateAfter(String departureCity, String arrivalCity, LocalDate date);
     boolean existsByDepartureCityAndArrivalCityAndDateAfterAndTwoBackSeats(String departureCity, String arrivalCity, LocalDate date, boolean twoBackSeats);
