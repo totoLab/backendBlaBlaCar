@@ -23,4 +23,12 @@ public class User {
     @Column(name = "email", unique = true)
     private String email;
 
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (!(obj instanceof User)) return false;
+        User user = (User) obj;
+        return this.getUsername().equals(user.getUsername()) ||
+                this.getEmail().equals(user.getEmail());
+    }
 }
