@@ -17,25 +17,25 @@ public class Ad {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @Column(name = "departure_city")
+    @Column(name = "departure_city", nullable = false)
     private String departureCity;
-    @Column(name = "departure_time")
+    @Column(name = "departure_time", nullable = false)
     private LocalTime departureTime;
-    @Column(name = "arrival_city")
+    @Column(name = "arrival_city", nullable = false)
     private String arrivalCity;
-    @Column(name = "arrival_time")
+    @Column(name = "arrival_time", nullable = false)
     private LocalTime arrivalTime;
-    @Column(name = "date")
+    @Column(name = "date", nullable = false)
     private LocalDate date;
     @Column(name = "car")
     private String car;
-    @Column(name = "max_seats")
-    private int max_seats;
+    @Column(name = "max_seats", nullable = false)
+    private int maxSeats;
     @Column(name = "booked_seats")
-    private int booked_seats;
+    private int bookedSeats;
     @Column(name = "two_back_seats")
     private boolean twoBackSeats;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     private User publisher;
 }
