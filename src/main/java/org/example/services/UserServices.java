@@ -48,7 +48,7 @@ public class UserServices {
         return bookingRepository.findByBooker(user);
     }
 
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {Exception.class, AdNotFoundException.class, BookingAlreadyExistsException.class, UserNotFoundException.class})
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {UserAlreadyExistsException.class})
     @Lock(LockModeType.OPTIMISTIC)
     public void addUser(User user) throws UserAlreadyExistsException {
         if (userRepository.existsByEmailOrUsername(user.getEmail(), user.getUsername())) throw new UserAlreadyExistsException("Utente " + user.getUsername() + " è già presente.");
@@ -56,7 +56,7 @@ public class UserServices {
         userRepository.save(user);
     }
 
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {Exception.class, AdNotFoundException.class, BookingAlreadyExistsException.class, UserNotFoundException.class})
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {UserNotFoundException.class})
     @Lock(LockModeType.OPTIMISTIC)
     public void deleteUser(String username) throws UserNotFoundException {
         if (!userRepository.existsByUsername(username)) throw new UserNotFoundException("Utente " + username + " non trovato.");
@@ -80,7 +80,7 @@ public class UserServices {
         return bookings;
     }
 
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {Exception.class, AdNotFoundException.class, BookingAlreadyExistsException.class, UserNotFoundException.class})
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {AdNotFoundException.class, BookingAlreadyExistsException.class, UserNotFoundException.class})
     @Lock(LockModeType.OPTIMISTIC)
     public Booking bookARide(User user, Long adId) throws NoSeatsLeftException, AdNotFoundException, UserNotFoundException, BookingAlreadyExistsException {
         if (user == null || !userRepository.existsByEmailOrUsername(user.getEmail(), user.getUsername())) {
@@ -108,7 +108,7 @@ public class UserServices {
         return bookingRepository.save(booking);
     }
 
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {Exception.class, AdNotFoundException.class, UserNotFoundException.class, BookingNotFoundException.class})
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {AdNotFoundException.class, UserNotFoundException.class, BookingNotFoundException.class})
     @Lock(LockModeType.OPTIMISTIC)
     public void removeBooking(User user, Long adId) throws AdNotFoundException, UserNotFoundException, BookingNotFoundException {
         if (user == null || !userRepository.existsByEmailOrUsername(user.getEmail(), user.getUsername())) {
@@ -133,18 +133,18 @@ public class UserServices {
         adRepository.save(ad);
     }
 
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {Exception.class, AdNotFoundException.class, UserNotFoundException.class})
-    public Long addAd(User user, Ad ad) throws Exception {
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {Exception.class, AdAlreadyExistsException.class, UserNotFoundException.class})
+    public Long addAd(User user, Ad ad) throws NoSeatsLeftException, UserNotFoundException, AdAlreadyExistsException {
         if (user == null || !userRepository.existsByEmailOrUsername(user.getEmail(), user.getUsername())) {
             throw new UserNotFoundException("Utente " + user + " non trovato.");
         }
 
         if (ad == null || ad.getMaxSeats() <= 0) {
-            throw new Exception("Invalid ad entity: " + ad);
+            throw new NoSeatsLeftException("Invalid ad entity: " + ad);
         }
 
         if (adRepository.existsById(ad.getId())) {
-            throw new Exception("Annuncio " + ad + " già esistente ");
+            throw new AdAlreadyExistsException("Annuncio " + ad + " già esistente ");
         }
 
         User u = userRepository.findByUsername(user.getUsername());
@@ -153,10 +153,10 @@ public class UserServices {
         return ad.getId();
     }
 
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {Exception.class, AdNotFoundException.class, UserNotFoundException.class})
-    public void removeAd(User user, Ad ad) throws Exception {
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {UnauthorizedException.class, AdNotFoundException.class, UserNotFoundException.class})
+    public void removeAd(User user, Ad ad) throws UserNotFoundException, UnauthorizedException, AdNotFoundException {
         if (user == null || ad == null) {
-            throw new Exception("Invalid entities passed.");
+            throw new AdNotFoundException("Invalid entities passed.");
         }
 
         if (!userRepository.existsByEmailOrUsername(user.getEmail(), user.getUsername())) {
@@ -165,7 +165,7 @@ public class UserServices {
 
         User u = userRepository.findByEmailOrUsername(user.getEmail(), user.getUsername());
         if (!ad.getPublisher().equals(u)) {
-            throw new Exception("Utente non autorizzato alla rimozione");
+            throw new UnauthorizedException("Utente non autorizzato alla rimozione");
         }
 
         if (!adRepository.existsById(ad.getId())) {
