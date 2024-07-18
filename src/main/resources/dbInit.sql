@@ -36,8 +36,8 @@ INSERT INTO blablacar.users (username, first_name, last_name, email) VALUES
     ('asmith', 'Alice', 'Smith', 'asmith@example.com');
 
 INSERT INTO blablacar.ads (departure_city, departure_time, arrival_city, arrival_time, date, car, max_seats, booked_seats, two_back_seats, publisher_id) VALUES
-    ('New York', '08:00:00', 'Boston', '12:00:00', '2023-07-20', 'Toyota Camry', 4, 2, false, 1),
-    ('Los Angeles', '09:00:00', 'San Francisco', '13:00:00', '2023-07-21', 'Honda Civic', 4, 3, true, 2);
+    ('New York', '08:00:00', 'Boston', '12:00:00', '2024-08-20', 'Toyota Camry', 4, 2, false, 1),
+    ('Los Angeles', '09:00:00', 'San Francisco', '13:00:00', '2024-08-21', 'Honda Civic', 4, 3, true, 2);
 
 INSERT INTO blablacar.bookings (user_id, ad_id) VALUES
     (1, 1),
