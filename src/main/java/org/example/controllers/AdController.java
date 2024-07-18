@@ -24,9 +24,6 @@ import java.util.List;
 public class AdController {
 
     @Autowired
-    AdRepo adRepository;
-
-    @Autowired
     AdServices adServices;
 
     @Autowired

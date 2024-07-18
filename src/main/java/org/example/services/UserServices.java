@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.example.repositories.*;
 import org.example.entities.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -23,6 +24,9 @@ public class UserServices {
 
     @Autowired
     UserRepo userRepository;
+
+    @Autowired
+    AdServices adServices;
 
     @Transactional(readOnly = true)
     public List<User> getUsers() {
@@ -60,13 +64,30 @@ public class UserServices {
         userRepository.delete(user);
     }
 
+    @Transactional(readOnly = true)
+    public List<Booking> getBookings(User user, Long adId, boolean isAdmin) {
+        Ad ad = adServices.getAdById(adId);
+        List<Booking> bookings;
+        if (isAdmin) {
+            bookings = bookingRepository.findByAd(ad);
+        } else {
+            bookings = new ArrayList<>();
+            Booking booking = bookingRepository.findByBookerAndAd(user, ad);
+            if (booking != null) {
+                bookings.add(booking);
+            }
+        }
+        return bookings;
+    }
+
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {Exception.class, AdNotFoundException.class, BookingAlreadyExistsException.class, UserNotFoundException.class})
     @Lock(LockModeType.OPTIMISTIC)
-    public Booking bookARide(User user, Ad ad) throws NoSeatsLeftException, AdNotFoundException, UserNotFoundException {
+    public Booking bookARide(User user, Long adId) throws NoSeatsLeftException, AdNotFoundException, UserNotFoundException, BookingAlreadyExistsException {
         if (user == null || !userRepository.existsByEmailOrUsername(user.getEmail(), user.getUsername())) {
             throw new UserNotFoundException("Utente " + user + " non trovato.");
         }
 
+        Ad ad = adServices.getAdById(adId);
         if (ad == null || !adRepository.existsByDepartureCityAndArrivalCityAndDate(ad.getDepartureCity(), ad.getArrivalCity(), ad.getDate())) {
             throw new AdNotFoundException("Annuncio " + ad + " non trovato");
         }
@@ -74,6 +95,9 @@ public class UserServices {
         if (ad.getBookedSeats() <= 0) {
             throw new NoSeatsLeftException("Non sono rimasti posti per questo annuncio");
         }
+
+        if (bookingRepository.existsByBookerAndAdId(user, ad.getId()))
+            throw new BookingAlreadyExistsException("Esiste già una prenotazione per questo utente su questo annuncio");
 
         ad.setBookedSeats(ad.getBookedSeats() + 1);
         adRepository.save(ad);
@@ -86,14 +110,18 @@ public class UserServices {
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {Exception.class, AdNotFoundException.class, UserNotFoundException.class, BookingNotFoundException.class})
     @Lock(LockModeType.OPTIMISTIC)
-    public void removeBooking(User user, Ad ad) throws AdNotFoundException, UserNotFoundException, BookingNotFoundException {
+    public void removeBooking(User user, Long adId) throws AdNotFoundException, UserNotFoundException, BookingNotFoundException {
         if (user == null || !userRepository.existsByEmailOrUsername(user.getEmail(), user.getUsername())) {
             throw new UserNotFoundException("Utente " + user + " non trovato.");
         }
 
+        Ad ad = adServices.getAdById(adId);
         if (ad == null) {
             throw new AdNotFoundException("Annuncio " + ad + " non trovato");
         }
+
+        if (!bookingRepository.existsByBookerAndAdId(user, ad.getId()))
+            throw new BookingNotFoundException("L'utente " + user.getUsername() + " non ha prenotazioni su questo annuncio.");
 
         Booking booking = bookingRepository.findByBookerAndAd(user, ad);
         if (booking == null) {
