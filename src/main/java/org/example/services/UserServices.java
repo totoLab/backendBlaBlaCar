@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.example.repositories.*;
 import org.example.entities.*;
 
+import java.util.List;
+
 @Service
 public class UserServices {
 
@@ -21,6 +23,42 @@ public class UserServices {
 
     @Autowired
     UserRepo userRepository;
+
+    @Transactional(readOnly = true)
+    public List<User> getUsers() {
+        return userRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public User getUser(String username) {
+        if (userRepository.existsByUsername(username)) {
+            return userRepository.findByUsername(username);
+        }
+        return null;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Booking> getUserBookings(String username) throws UserNotFoundException {
+        if (!userRepository.existsByUsername(username)) throw new UserNotFoundException("Utente " + username + " non trovato.");
+        User user = userRepository.findByUsername(username);
+        return bookingRepository.findByBooker(user);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {Exception.class, AdNotFoundException.class, BookingAlreadyExistsException.class, UserNotFoundException.class})
+    @Lock(LockModeType.OPTIMISTIC)
+    public void addUser(User user) throws UserAlreadyExistsException {
+        if (userRepository.existsByEmailOrUsername(user.getEmail(), user.getUsername())) throw new UserAlreadyExistsException("Utente " + user.getUsername() + " è già presente.");
+
+        userRepository.save(user);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {Exception.class, AdNotFoundException.class, BookingAlreadyExistsException.class, UserNotFoundException.class})
+    @Lock(LockModeType.OPTIMISTIC)
+    public void deleteUser(String username) throws UserNotFoundException {
+        if (!userRepository.existsByUsername(username)) throw new UserNotFoundException("Utente " + username + " non trovato.");
+        User user = userRepository.findByUsername(username);
+        userRepository.delete(user);
+    }
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {Exception.class, AdNotFoundException.class, BookingAlreadyExistsException.class, UserNotFoundException.class})
     @Lock(LockModeType.OPTIMISTIC)
