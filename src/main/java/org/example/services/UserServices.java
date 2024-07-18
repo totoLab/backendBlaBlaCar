@@ -109,8 +109,4 @@ public class UserServices {
         adRepository.delete(ad);
     }
 
-    public User getRandomUser() {
-        return userRepository.findByUsername("toto");
-    }
-
 }
