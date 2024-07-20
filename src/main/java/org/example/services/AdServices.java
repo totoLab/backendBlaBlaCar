@@ -1,6 +1,7 @@
 package org.example.services;
 
 import org.example.entities.Ad;
+import org.example.entities.User;
 import org.example.exceptions.*;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,11 @@ public class AdServices {
     public Ad getAvailableById(long id) {
         LocalDate yesterday = LocalDate.now().minusDays(1);
         return adRepository.findByIdAndDateAfter(id, yesterday);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Ad> getAdByPublisher(User user) {
+        return adRepository.findAdsByPublisher(user);
     }
 
     // consider filter twoBackSeats disabled when false and filtering based on it when true

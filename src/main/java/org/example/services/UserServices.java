@@ -80,6 +80,12 @@ public class UserServices {
         return bookings;
     }
 
+    @Transactional(readOnly = true)
+    public List<Ad> getUserAds(String username) throws UserNotFoundException {
+        User user = userRepository.findByUsername(username);
+        return adServices.getAdByPublisher(user);
+    }
+
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {AdNotFoundException.class, BookingAlreadyExistsException.class, UserNotFoundException.class})
     @Lock(LockModeType.OPTIMISTIC)
     public Booking bookARide(User user, Long adId) throws NoSeatsLeftException, AdNotFoundException, UserNotFoundException, BookingAlreadyExistsException {

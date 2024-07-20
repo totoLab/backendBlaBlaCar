@@ -1,6 +1,7 @@
 package org.example.repositories;
 
 import org.example.entities.Ad;
+import org.example.entities.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;
@@ -13,6 +14,7 @@ public interface AdRepo extends JpaRepository<Ad, Long>  {
     List<Ad> findByDateAfter(LocalDate date);
     Ad findByIdAndDateAfter(long id, LocalDate date);
     Ad findById(long id);
+    List<Ad> findAdsByPublisher(User user);
 
     boolean existsByDepartureCityAndArrivalCityAndDateAfter(String departureCity, String arrivalCity, LocalDate date);
     boolean existsByDepartureCityAndArrivalCityAndDateAfterAndTwoBackSeats(String departureCity, String arrivalCity, LocalDate date, boolean twoBackSeats);

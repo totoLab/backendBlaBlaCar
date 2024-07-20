@@ -48,6 +48,18 @@ public class UserController {
         return response;
     }
 
+    // authenticated user == user with username || user == admin
+    @GetMapping("/{username}/ads")
+    public ResponseEntity<?> getUserAds(@PathVariable String username){
+        ResponseEntity<?> response;
+        try {
+            response = new ResponseEntity<>(userServices.getUserAds(username), HttpStatus.OK);
+        } catch (UserNotFoundException e) {
+            response = new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        }
+        return response;
+    }
+
     // user admin and everyone during sign up
     @PostMapping("/user")
     public ResponseEntity<?> addUser(@RequestBody User user){
