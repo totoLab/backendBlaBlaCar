@@ -1,11 +1,10 @@
 package org.example.controllers;
 
+import lombok.Getter;
 import org.example.entities.Ad;
-import org.example.entities.Booking;
 import org.example.entities.User;
-import org.example.repositories.AdRepo;
-import org.example.repositories.BookingRepo;
-import org.example.repositories.UserRepo;
+import org.example.exceptions.InvalidDateException;
+
 import org.example.services.AdServices;
 import org.example.services.CommonServices;
 import org.example.services.UserServices;
@@ -14,7 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.awt.print.Book;
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -36,6 +35,26 @@ public class AdController {
     public ResponseEntity<?> getAds() {
         List<Ad> ads = adServices.getAvailableAds();
         HttpStatus status = HttpStatus.OK;
+        if (ads.isEmpty()) {
+            status = HttpStatus.NOT_FOUND;
+        }
+        return new ResponseEntity<>(ads, status);
+    }
+
+    @PostMapping
+    public ResponseEntity<?> getAds(@RequestBody AdQuery adQuery) {
+        List<Ad> ads = List.of();
+        HttpStatus status = HttpStatus.OK;
+
+        try {
+            if (adQuery.getDate() != null) {
+                ads = adServices.getAdsByDepartureCityAndArrivalCityAndDate(adQuery.getDepartureCity(), adQuery.getArrivalCity(), adQuery.getDate(), adQuery.isTwoBackSeats());
+            } else {
+                ads = adServices.getAdsByDepartureCityAndArrivalCity(adQuery.getDepartureCity(), adQuery.getArrivalCity(), adQuery.isTwoBackSeats());
+            }
+        } catch (InvalidDateException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
         if (ads.isEmpty()) {
             status = HttpStatus.NOT_FOUND;
         }
@@ -79,6 +98,20 @@ public class AdController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_ACCEPTABLE);
         }
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+}
+
+@Getter
+class AdQuery implements Serializable {
+
+    private String departureCity;
+    private String arrivalCity;
+    private LocalDate date;
+    private boolean twoBackSeats;
+
+    AdQuery() {
+        date = LocalDate.now().minusDays(1);
     }
 
 }
