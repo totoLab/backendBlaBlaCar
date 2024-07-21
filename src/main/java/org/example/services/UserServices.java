@@ -61,6 +61,12 @@ public class UserServices {
     public void deleteUser(String username) throws UserNotFoundException {
         if (!userRepository.existsByUsername(username)) throw new UserNotFoundException("Utente " + username + " non trovato.");
         User user = userRepository.findByUsername(username);
+        for (Booking booking : bookingRepository.findByBooker(user)) {
+            try {
+                removeBooking(user, booking.getAd().getId());
+            } catch (UserNotFoundException | AdNotFoundException | BookingNotFoundException e) {}
+        }
+        adRepository.deleteAll(adRepository.findAdsByPublisher(user));
         userRepository.delete(user);
     }
 

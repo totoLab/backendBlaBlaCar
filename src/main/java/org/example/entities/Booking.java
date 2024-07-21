@@ -17,20 +17,22 @@ public class Booking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     User booker;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
     @JoinColumn(name = "ad_id")
     Ad ad;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+/*
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "users_booked_ads",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "ad_id")
     )
     List<Ad> bookedAds = new ArrayList<>();
+*/
 
 }
