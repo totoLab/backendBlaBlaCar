@@ -56,7 +56,7 @@ public class AdController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
         if (ads.isEmpty()) {
-            status = HttpStatus.NOT_FOUND;
+            status = HttpStatus.OK;
         }
         return new ResponseEntity<>(ads, status);
     }
@@ -98,6 +98,12 @@ public class AdController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_ACCEPTABLE);
         }
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    // utils
+    @GetMapping("/cities")
+    public ResponseEntity<?> getCities() {
+        return new ResponseEntity<>(commonServices.getCities(), HttpStatus.OK);
     }
 
 }
