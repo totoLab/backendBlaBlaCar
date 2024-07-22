@@ -55,7 +55,7 @@ public class BookingController {
         } catch (Exception e) {
             return new ResponseEntity<>("Booking failed: " + e.getMessage(), HttpStatus.CONFLICT);
         }
-        return new ResponseEntity<>(bookingId, HttpStatus.OK);
+        return new ResponseEntity<>(bookingId.toString(), HttpStatus.OK);
     }
 
     // authenticated user != ad.publisher
