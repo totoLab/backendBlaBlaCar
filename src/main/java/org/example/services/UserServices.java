@@ -3,6 +3,7 @@ package org.example.services;
 import org.example.exceptions.*;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.example.repositories.*;
 import org.example.entities.*;
 
+import java.sql.SQLClientInfoException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -92,6 +95,7 @@ public class UserServices {
         return adServices.getAdByPublisher(user);
     }
 
+    @Retryable(value = {SQLClientInfoException.class, SQLException.class})
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {AdNotFoundException.class, BookingAlreadyExistsException.class, UserNotFoundException.class})
     @Lock(LockModeType.OPTIMISTIC)
     public Booking bookARide(User user, Long adId) throws NoSeatsLeftException, AdNotFoundException, UserNotFoundException, BookingAlreadyExistsException {
