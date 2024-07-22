@@ -104,7 +104,7 @@ public class UserServices {
             throw new AdNotFoundException("Annuncio " + ad + " non trovato");
         }
 
-        if (ad.getBookedSeats() <= 0) {
+        if (ad.getMaxSeats() - ad.getBookedSeats() <= 0) {
             throw new NoSeatsLeftException("Non sono rimasti posti per questo annuncio");
         }
 
