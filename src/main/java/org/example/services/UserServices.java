@@ -109,7 +109,7 @@ public class UserServices {
         }
 
         if (bookingRepository.existsByBookerAndAdId(user, ad.getId()))
-            throw new BookingAlreadyExistsException("Esiste già una prenotazione per questo utente su questo annuncio");
+            throw new BookingAlreadyExistsException("Esiste già una prenotazione per l'utente " + user.getUsername() + " su questo annuncio (" + ad.getId() + ")");
 
         ad.setBookedSeats(ad.getBookedSeats() + 1);
         adRepository.save(ad);
@@ -140,9 +140,9 @@ public class UserServices {
             throw new BookingNotFoundException("Prenotazione non trovata.");
         }
 
-        bookingRepository.delete(booking);
         ad.setBookedSeats(ad.getBookedSeats() - 1);
         adRepository.save(ad);
+        bookingRepository.delete(booking);
     }
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {Exception.class, AdAlreadyExistsException.class, UserNotFoundException.class})

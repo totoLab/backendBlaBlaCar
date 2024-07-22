@@ -51,7 +51,7 @@ public class BookingController {
         try {
             bookingId = userServices.bookARide(user, id).getId();
         } catch (BookingAlreadyExistsException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
+            return new ResponseEntity<>("Booking failed: " + e.getMessage(), HttpStatus.CONFLICT);
         } catch (Exception e) {
             return new ResponseEntity<>("Booking failed: " + e.getMessage(), HttpStatus.CONFLICT);
         }
