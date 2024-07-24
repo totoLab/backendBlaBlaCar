@@ -20,18 +20,8 @@ public class Booking {
     @Column(name = "user_id")
     String bookerId;
 
-    @ManyToOne(fetch = FetchType.EAGER, cascade = CascadeType.REMOVE)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "ad_id")
     Ad ad;
-
-/*
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "users_booked_ads",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "ad_id")
-    )
-    List<Ad> bookedAds = new ArrayList<>();
-*/
 
 }

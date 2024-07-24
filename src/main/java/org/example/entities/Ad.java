@@ -35,6 +35,6 @@ public class Ad {
     private int bookedSeats;
     @Column(name = "two_back_seats")
     private boolean twoBackSeats;
-    @Column
+    @Column(name = "publisher_id")
     private String publisherId;
 }
