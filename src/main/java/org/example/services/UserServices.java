@@ -161,10 +161,6 @@ public class UserServices {
             throw new AdNotFoundException("Annuncio " + adId + " non trovato");
         }
 
-        if (!connectedUser.getName().equals(ad.getPublisherId())) {
-            throw new UnauthorizedException("Operation not permitted by user " + connectedUser.getName());
-        }
-
         if (!bookingRepository.existsByBookerIdAndAdId(connectedUser.getName(), ad.getId()))
             throw new BookingNotFoundException("L'utente " + connectedUser.getName() + " non ha prenotazioni su questo annuncio.");
 
@@ -184,9 +180,7 @@ public class UserServices {
             throw new NoSeatsLeftException("Invalid ad entity: " + ad);
         }
 
-        if (!connectedUser.getName().equals(ad.getPublisherId())) {
-            throw new UnauthorizedException("Operation not permitted for user " + connectedUser.getName());
-        }
+        ad.setPublisherId(connectedUser.getName());
 
         if (adRepository.existsById(ad.getId())) {
             throw new AdAlreadyExistsException("Annuncio " + ad + " già esistente ");
