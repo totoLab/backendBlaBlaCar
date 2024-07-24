@@ -182,7 +182,7 @@ public class UserServices {
 
         ad.setPublisherId(connectedUser.getName());
 
-        if (adRepository.existsById(ad.getId())) {
+        if (adRepository.existsByDepartureCityAndArrivalCityAndDate(ad.getDepartureCity(), ad.getArrivalCity(), ad.getDate())) {
             throw new AdAlreadyExistsException("Annuncio " + ad + " già esistente ");
         }
 

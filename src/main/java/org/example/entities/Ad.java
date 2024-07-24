@@ -10,7 +10,10 @@ import java.time.LocalTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "ads", schema = "blablacar")
+@Table(name = "ads",
+        schema = "blablacar",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"departure_city", "arrival_city", "date"})
+)
 public class Ad {
 
     @Id
