@@ -35,7 +35,6 @@ public class Ad {
     private int bookedSeats;
     @Column(name = "two_back_seats")
     private boolean twoBackSeats;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    private User publisher;
+    @Column
+    private String publisherId;
 }

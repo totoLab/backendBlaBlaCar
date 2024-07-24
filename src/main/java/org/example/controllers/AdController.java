@@ -11,6 +11,7 @@ import org.example.services.UserServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.Serializable;
@@ -61,10 +62,10 @@ public class AdController {
         return new ResponseEntity<>(ads, status);
     }
 
-    // everyone if searching for ads with data >= today, otherwise only authorised users can see them: admin, publisher and bookers)
+    // everyone if searching for ads with data >= today, otherwise only authorised users can see them: admin, publisher and bookers
     @GetMapping("/{id}")
-    public ResponseEntity<Ad> getAd(@PathVariable Long id) {
-        Ad ad = adServices.getAvailableById(id); // TODO, get based on permissions
+    public ResponseEntity<Ad> getAd(@PathVariable Long id, Authentication connectedUser) {
+        Ad ad = adServices.getAvailableById(id, connectedUser); // TODO, get based on permissions
         HttpStatus status = HttpStatus.OK;
         if (ad == null) {
             status = HttpStatus.NOT_FOUND;
@@ -74,12 +75,10 @@ public class AdController {
 
     // authenticated user == ad.publisher
     @PostMapping("/ad")
-    public ResponseEntity<?> addAd(@RequestBody Ad ad){
-        User user = commonServices.getCurrentUser();
-
+    public ResponseEntity<?> addAd(@RequestBody Ad ad, Authentication connectedUser){
         Long id;
         try {
-            id = userServices.addAd(user, ad);
+            id = userServices.addAd(connectedUser, ad);
         } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_ACCEPTABLE);
         }
@@ -88,12 +87,10 @@ public class AdController {
 
     // authenticated user == ad.publisher || user == admin
     @PostMapping("/{id}/delete")
-    public ResponseEntity<?> deleteAd(@PathVariable Long id) {
-        User user = commonServices.getCurrentUser();
-
+    public ResponseEntity<?> deleteAd(@PathVariable Long id, Authentication connectedUser) {
         Ad ad = adServices.getAdById(id);
         try {
-            userServices.removeAd(user, ad);
+            userServices.removeAd(connectedUser, ad);
         } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_ACCEPTABLE);
         }
