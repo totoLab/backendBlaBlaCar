@@ -65,19 +65,6 @@ public class UserController {
         return response;
     }
 
-    // user admin and everyone during sign up
-    @PostMapping("/user")
-    public ResponseEntity<?> addUser(@RequestBody User user, Authentication connectedUser){
-        try {
-            userServices.addUser(user, connectedUser);
-        } catch (UserAlreadyExistsException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
-        } catch (UnauthorizedException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.UNAUTHORIZED);
-        }
-        return new ResponseEntity<>(user.getUsername(), HttpStatus.OK);
-    }
-
     // authenticated user == user with username || user == admin
     @PostMapping("/{username}/delete")
     public ResponseEntity<?> deleteUser(@PathVariable String username, Authentication connectedUser){

@@ -75,15 +75,6 @@ public class UserServices {
         return bookingRepository.findByBookerId(connectedUser.getName());
     }
 
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {UserAlreadyExistsException.class})
-    @Lock(LockModeType.OPTIMISTIC)
-    public void addUser(User user, Authentication connectedUser) throws UserAlreadyExistsException, UnauthorizedException {
-        if (!connectedUser.getName().equals(user.getId())) {
-            throw new UnauthorizedException("Operation not permitted for " + connectedUser.getName());
-        }
-        // TODO addUser to keycloak
-    }
-
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {UserNotFoundException.class})
     @Lock(LockModeType.OPTIMISTIC)
     public void deleteUser(Authentication connectedUser, String username) throws UserNotFoundException, UnauthorizedException {
