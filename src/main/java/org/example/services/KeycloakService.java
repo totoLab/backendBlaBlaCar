@@ -52,5 +52,9 @@ public class KeycloakService {
         }
         return users.get(0); // assuming usenames are unique
     }
+
+    public void deleteUser(String id) {
+        keycloak.realm(keycloakRealm).users().delete(id);
+    }
 }
 

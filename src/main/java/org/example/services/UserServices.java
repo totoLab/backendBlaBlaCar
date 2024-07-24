@@ -77,7 +77,7 @@ public class UserServices {
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {UserNotFoundException.class})
     @Lock(LockModeType.OPTIMISTIC)
-    public void deleteUser(Authentication connectedUser, String username) throws UserNotFoundException, UnauthorizedException {
+    public void deleteUser(Authentication connectedUser, String username) throws Exception {
         String userId = getUser(username).getId();
         if (!connectedUser.getName().equals(userId)) {
             throw new UnauthorizedException("Operation not permitted for user " + connectedUser.getName());
@@ -86,10 +86,12 @@ public class UserServices {
         for (Booking booking : bookingRepository.findByBookerId(connectedUser.getName())) {
             try {
                 removeBooking(connectedUser, booking.getAd().getId());
-            } catch (UserNotFoundException | AdNotFoundException | BookingNotFoundException e) {}
+            } catch (UserNotFoundException | AdNotFoundException | BookingNotFoundException e) {
+            }
         }
         adRepository.deleteAll(adRepository.findAdsByPublisherId(connectedUser.getName()));
-        // TODO remove from keycloak
+
+        keycloakService.deleteUser(connectedUser.getName());
     }
 
     @Transactional(readOnly = true)
