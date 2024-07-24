@@ -130,6 +130,10 @@ public class UserServices {
             throw new AdNotFoundException("Annuncio " + ad + " non trovato");
         }
 
+        if (connectedUser.getName().equals(ad.getPublisherId())) {
+            throw new BookingAlreadyExistsException("L'utente" + connectedUser.getName() + " ha pubblicato l'annuncio, impossibile prenotare.");
+        }
+
         if (ad.getMaxSeats() - ad.getBookedSeats() <= 0) {
             throw new NoSeatsLeftException("Non sono rimasti posti per questo annuncio");
         }
