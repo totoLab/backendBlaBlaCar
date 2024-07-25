@@ -54,7 +54,11 @@ public class KeycloakService {
     }
 
     public void deleteUser(String id) {
-        keycloak.realm(keycloakRealm).users().delete(id);
+        try {
+            keycloak.realm(keycloakRealm).users().delete(id);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }
 
