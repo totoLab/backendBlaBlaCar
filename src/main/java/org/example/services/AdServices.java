@@ -1,8 +1,11 @@
 package org.example.services;
 
 import org.example.entities.Ad;
+import org.example.entities.Booking;
 import org.example.entities.User;
 import org.example.exceptions.*;
+import org.example.repositories.BookingRepo;
+import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,6 +21,8 @@ public class AdServices {
 
     @Autowired
     AdRepo adRepository;
+    @Autowired
+    private BookingRepo bookingRepository;
 
     @Transactional(readOnly = true)
     public List<Ad> getAvailableAds() {
@@ -31,14 +36,24 @@ public class AdServices {
     }
 
     @Transactional(readOnly = true)
-    public Ad getAvailableById(long id) {
+    public Ad getAvailableById(long id, Authentication connectedUser) {
+        if (!adRepository.existsById(id)) return null;
+        Ad ad = adRepository.findById(id);
+        List<String> bookers = bookingRepository.findByAd(ad).stream().map(Booking::getBookerId).toList();
         LocalDate yesterday = LocalDate.now().minusDays(1);
-        return adRepository.findByIdAndDateAfter(id, yesterday);
+        if (
+                ad.getPublisherId().equals(connectedUser.getName()) ||
+                        bookers.contains(connectedUser.getName()) ||
+                        ad.getDate().isAfter(yesterday)
+        ) {
+            return ad;
+        }
+        return null;
     }
 
     @Transactional(readOnly = true)
-    public List<Ad> getAdByPublisher(User user) {
-        return adRepository.findAdsByPublisher(user);
+    public List<Ad> getAdByPublisher(Authentication connectedUser) {
+        return adRepository.findAdsByPublisherId(connectedUser.getName());
     }
 
     // consider filter twoBackSeats disabled when false and filtering based on it when true

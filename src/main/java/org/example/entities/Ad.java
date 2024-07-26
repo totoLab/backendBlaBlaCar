@@ -10,7 +10,10 @@ import java.time.LocalTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "ads", schema = "blablacar")
+@Table(name = "ads",
+        schema = "blablacar",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"departure_city", "arrival_city", "date"})
+)
 public class Ad {
 
     @Id
@@ -35,7 +38,6 @@ public class Ad {
     private int bookedSeats;
     @Column(name = "two_back_seats")
     private boolean twoBackSeats;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    private User publisher;
+    @Column(name = "publisher_id")
+    private String publisherId;
 }

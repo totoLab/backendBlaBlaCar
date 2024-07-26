@@ -2,8 +2,10 @@ package org.example.services;
 
 import org.example.exceptions.*;
 import jakarta.persistence.LockModeType;
+import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.retry.annotation.Retryable;
+import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,120 +28,139 @@ public class UserServices {
     AdRepo adRepository;
 
     @Autowired
-    UserRepo userRepository;
-
-    @Autowired
     AdServices adServices;
 
-    @Transactional(readOnly = true)
-    public List<User> getUsers() {
-        return userRepository.findAll();
-    }
+    @Autowired
+    KeycloakService keycloakService;
 
     @Transactional(readOnly = true)
     public User getUser(String username) {
-        if (userRepository.existsByUsername(username)) {
-            return userRepository.findByUsername(username);
+        UserRepresentation userRepresentation = keycloakService.getUserByUsername(username);
+        if (userRepresentation == null) {
+            return null;
         }
-        return null;
+
+        User user = new User();
+        user.setId(userRepresentation.getId());
+        user.setUsername(userRepresentation.getUsername());
+        user.setEmail(userRepresentation.getEmail());
+        user.setName(userRepresentation.getFirstName());
+        user.setSurname(userRepresentation.getLastName());
+
+        return user;
     }
 
     @Transactional(readOnly = true)
-    public List<Booking> getUserBookings(String username) throws UserNotFoundException {
-        if (!userRepository.existsByUsername(username)) throw new UserNotFoundException("Utente " + username + " non trovato.");
-        User user = userRepository.findByUsername(username);
-        return bookingRepository.findByBooker(user);
+    public List<User> getAllUsers() {
+        List<User> users = new ArrayList<>();
+        for (UserRepresentation userRepresentation: keycloakService.getUsers()) {
+            User user = new User();
+            user.setId(userRepresentation.getId());
+            user.setUsername(userRepresentation.getUsername());
+            user.setEmail(userRepresentation.getEmail());
+            user.setName(userRepresentation.getFirstName());
+            user.setSurname(userRepresentation.getLastName());
+            users.add(user);
+        }
+        return users;
     }
 
-    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {UserAlreadyExistsException.class})
-    @Lock(LockModeType.OPTIMISTIC)
-    public void addUser(User user) throws UserAlreadyExistsException {
-        if (userRepository.existsByEmailOrUsername(user.getEmail(), user.getUsername())) throw new UserAlreadyExistsException("Utente " + user.getUsername() + " è già presente.");
+    @Transactional(readOnly = true)
+    public List<Booking> getUserBookings(Authentication connectedUser, String username) throws UserNotFoundException, UnauthorizedException {
+        String userId = getUser(username).getId();
+        if (!connectedUser.getName().equals(userId)) {
+            throw new UnauthorizedException("Operation not permitted by user " + connectedUser.getName());
+        }
 
-        userRepository.save(user);
+        return bookingRepository.findByBookerId(connectedUser.getName());
     }
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {UserNotFoundException.class})
     @Lock(LockModeType.OPTIMISTIC)
-    public void deleteUser(String username) throws UserNotFoundException {
-        if (!userRepository.existsByUsername(username)) throw new UserNotFoundException("Utente " + username + " non trovato.");
-        User user = userRepository.findByUsername(username);
-        for (Booking booking : bookingRepository.findByBooker(user)) {
-            try {
-                removeBooking(user, booking.getAd().getId());
-            } catch (UserNotFoundException | AdNotFoundException | BookingNotFoundException e) {}
+    public void deleteUser(Authentication connectedUser, String username) throws Exception {
+        String userId = getUser(username).getId();
+        if (!connectedUser.getName().equals(userId)) {
+            throw new UnauthorizedException("Operation not permitted for user " + connectedUser.getName());
         }
-        adRepository.deleteAll(adRepository.findAdsByPublisher(user));
-        userRepository.delete(user);
+
+        for (Booking booking : bookingRepository.findByBookerId(connectedUser.getName())) {
+            try {
+                removeBooking(connectedUser, booking.getAd().getId());
+            } catch (UserNotFoundException | AdNotFoundException | BookingNotFoundException e) {
+            }
+        }
+        adRepository.deleteAll(adRepository.findAdsByPublisherId(connectedUser.getName()));
+
+        keycloakService.deleteUser(connectedUser.getName());
     }
 
     @Transactional(readOnly = true)
-    public List<Booking> getBookings(User user, Long adId, boolean isAdmin) {
+    public List<Booking> getBookings(Authentication connectedUser, Long adId) throws UnauthorizedException {
         Ad ad = adServices.getAdById(adId);
-        List<Booking> bookings;
-        if (isAdmin) {
-            bookings = bookingRepository.findByAd(ad);
-        } else {
-            bookings = new ArrayList<>();
-            Booking booking = bookingRepository.findByBookerAndAd(user, ad);
-            if (booking != null) {
-                bookings.add(booking);
-            }
+        List<Booking> bookings = new ArrayList<>();
+
+        if (!connectedUser.getName().equals(ad.getPublisherId())) {
+            throw new UnauthorizedException("Operation not permitted for user " + connectedUser.getName());
+        }
+
+        bookings = new ArrayList<>();
+        Booking booking = bookingRepository.findByBookerIdAndAd(connectedUser.getName(), ad);
+        if (booking != null) {
+            bookings.add(booking);
         }
         return bookings;
     }
 
     @Transactional(readOnly = true)
-    public List<Ad> getUserAds(String username) throws UserNotFoundException {
-        User user = userRepository.findByUsername(username);
-        return adServices.getAdByPublisher(user);
+    public List<Ad> getUserAds( Authentication connectedUser, String username) throws UserNotFoundException, UnauthorizedException {
+        String userId = getUser(username).getId();
+        if (!connectedUser.getName().equals(userId)) {
+            throw new UnauthorizedException("Operation not permitted by user " + connectedUser.getName());
+        }
+
+        return adServices.getAdByPublisher(connectedUser);
     }
 
     @Retryable(value = {SQLClientInfoException.class, SQLException.class})
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {AdNotFoundException.class, BookingAlreadyExistsException.class, UserNotFoundException.class})
     @Lock(LockModeType.OPTIMISTIC)
-    public Booking bookARide(User user, Long adId) throws NoSeatsLeftException, AdNotFoundException, UserNotFoundException, BookingAlreadyExistsException {
-        if (user == null || !userRepository.existsByEmailOrUsername(user.getEmail(), user.getUsername())) {
-            throw new UserNotFoundException("Utente " + user + " non trovato.");
-        }
-
+    public Booking bookARide(Authentication connectedUser, Long adId) throws NoSeatsLeftException, AdNotFoundException, UserNotFoundException, BookingAlreadyExistsException {
         Ad ad = adServices.getAdById(adId);
         if (ad == null || !adRepository.existsByDepartureCityAndArrivalCityAndDate(ad.getDepartureCity(), ad.getArrivalCity(), ad.getDate())) {
             throw new AdNotFoundException("Annuncio " + ad + " non trovato");
+        }
+
+        if (connectedUser.getName().equals(ad.getPublisherId())) {
+            throw new BookingAlreadyExistsException("L'utente" + connectedUser.getName() + " ha pubblicato l'annuncio, impossibile prenotare.");
         }
 
         if (ad.getMaxSeats() - ad.getBookedSeats() <= 0) {
             throw new NoSeatsLeftException("Non sono rimasti posti per questo annuncio");
         }
 
-        if (bookingRepository.existsByBookerAndAdId(user, ad.getId()))
-            throw new BookingAlreadyExistsException("Esiste già una prenotazione per l'utente " + user.getUsername() + " su questo annuncio (" + ad.getId() + ")");
+        if (bookingRepository.existsByBookerIdAndAdId(connectedUser.getName(), ad.getId()))
+            throw new BookingAlreadyExistsException("Esiste già una prenotazione per l'utente " + connectedUser.getName() + " su questo annuncio (" + ad.getId() + ")");
 
         ad.setBookedSeats(ad.getBookedSeats() + 1);
-        adRepository.save(ad);
-
+        
         Booking booking = new Booking();
-        booking.setBooker(user);
+        booking.setBookerId(connectedUser.getName());
         booking.setAd(ad);
         return bookingRepository.save(booking);
     }
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {AdNotFoundException.class, UserNotFoundException.class, BookingNotFoundException.class})
     @Lock(LockModeType.OPTIMISTIC)
-    public void removeBooking(User user, Long adId) throws AdNotFoundException, UserNotFoundException, BookingNotFoundException {
-        if (user == null || !userRepository.existsByEmailOrUsername(user.getEmail(), user.getUsername())) {
-            throw new UserNotFoundException("Utente " + user + " non trovato.");
-        }
-
+    public void removeBooking(Authentication connectedUser, Long adId) throws AdNotFoundException, UserNotFoundException, BookingNotFoundException, UnauthorizedException {
         Ad ad = adServices.getAdById(adId);
         if (ad == null) {
-            throw new AdNotFoundException("Annuncio " + ad + " non trovato");
+            throw new AdNotFoundException("Annuncio " + adId + " non trovato");
         }
 
-        if (!bookingRepository.existsByBookerAndAdId(user, ad.getId()))
-            throw new BookingNotFoundException("L'utente " + user.getUsername() + " non ha prenotazioni su questo annuncio.");
+        if (!bookingRepository.existsByBookerIdAndAdId(connectedUser.getName(), ad.getId()))
+            throw new BookingNotFoundException("L'utente " + connectedUser.getName() + " non ha prenotazioni su questo annuncio.");
 
-        Booking booking = bookingRepository.findByBookerAndAd(user, ad);
+        Booking booking = bookingRepository.findByBookerIdAndAd(connectedUser.getName(), ad);
         if (booking == null) {
             throw new BookingNotFoundException("Prenotazione non trovata.");
         }
@@ -150,38 +171,26 @@ public class UserServices {
     }
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {Exception.class, AdAlreadyExistsException.class, UserNotFoundException.class})
-    public Long addAd(User user, Ad ad) throws NoSeatsLeftException, UserNotFoundException, AdAlreadyExistsException {
-        if (user == null || !userRepository.existsByEmailOrUsername(user.getEmail(), user.getUsername())) {
-            throw new UserNotFoundException("Utente " + user + " non trovato.");
-        }
-
+    public Long addAd(Authentication connectedUser, Ad ad) throws NoSeatsLeftException, UserNotFoundException, AdAlreadyExistsException, UnauthorizedException {
         if (ad == null || ad.getMaxSeats() <= 0) {
             throw new NoSeatsLeftException("Invalid ad entity: " + ad);
         }
 
-        if (adRepository.existsById(ad.getId())) {
+        ad.setPublisherId(connectedUser.getName());
+
+        if (adRepository.existsByDepartureCityAndArrivalCityAndDate(ad.getDepartureCity(), ad.getArrivalCity(), ad.getDate())) {
             throw new AdAlreadyExistsException("Annuncio " + ad + " già esistente ");
         }
 
-        User u = userRepository.findByUsername(user.getUsername());
-        ad.setPublisher(u);
+        ad.setPublisherId(connectedUser.getName());
         adRepository.save(ad);
         return ad.getId();
     }
 
     @Transactional(propagation = Propagation.REQUIRED, rollbackFor = {UnauthorizedException.class, AdNotFoundException.class, UserNotFoundException.class})
-    public void removeAd(User user, Ad ad) throws UserNotFoundException, UnauthorizedException, AdNotFoundException {
-        if (user == null || ad == null) {
-            throw new AdNotFoundException("Invalid entities passed.");
-        }
-
-        if (!userRepository.existsByEmailOrUsername(user.getEmail(), user.getUsername())) {
-            throw new UserNotFoundException("Utente " + user + " non trovato.");
-        }
-
-        User u = userRepository.findByEmailOrUsername(user.getEmail(), user.getUsername());
-        if (!ad.getPublisher().equals(u)) {
-            throw new UnauthorizedException("Utente non autorizzato alla rimozione");
+    public void removeAd(Authentication connectedUser, Ad ad) throws UserNotFoundException, UnauthorizedException, AdNotFoundException {
+        if (!connectedUser.getName().equals(ad.getPublisherId())) {
+            throw new UnauthorizedException("Operation not permitted for user " + connectedUser.getName());
         }
 
         if (!adRepository.existsById(ad.getId())) {
