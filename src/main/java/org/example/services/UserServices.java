@@ -142,8 +142,7 @@ public class UserServices {
             throw new BookingAlreadyExistsException("Esiste già una prenotazione per l'utente " + connectedUser.getName() + " su questo annuncio (" + ad.getId() + ")");
 
         ad.setBookedSeats(ad.getBookedSeats() + 1);
-        adRepository.save(ad);
-
+        
         Booking booking = new Booking();
         booking.setBookerId(connectedUser.getName());
         booking.setAd(ad);
