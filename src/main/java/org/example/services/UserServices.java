@@ -6,6 +6,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.Authentication;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
